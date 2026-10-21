@@ -238,20 +238,18 @@ do_user(struct options *opts, const char *user)
 		} else {
 			/* Not all digits - treat as username */
 			pwd = getpwnam(user);
-			if (pwd == NULL) {
-				fprintf(stderr, "%s: Error no such user: %s\n", opts->progname, user);
-				return 1;
-			}
 		}
 	} else {
 		/* uid_based_files not enabled - always use username lookup */
 		pwd = getpwnam(user);
-		if (pwd == NULL) {
-			fprintf(stderr, "%s: Error no such user: %s\n", opts->progname, user);
-			return 1;
-		}
 	}
-	fd = open_tally(dir, pwd->pw_name, pwd->pw_uid, 1, !!(opts->flags & FAILLOCK_FLAG_UID_BASED_FILES));
+
+	/* Common error handling for username lookups */
+	if (pwd == NULL) {
+		fprintf(stderr, "%s: Error no such user: %s\n", opts->progname, user);
+		return 1;
+	}
+	fd = open_tally(dir, pwd->pw_name, pwd->pw_uid, 1, opts->flags & FAILLOCK_FLAG_UID_BASED_FILES);
 
 	if (fd == -1) {
 		if (errno == ENOENT) {
