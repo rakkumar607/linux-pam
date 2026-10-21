@@ -213,7 +213,7 @@ do_user(struct options *opts, const char *user)
 	int fd;
 	int rv;
 	struct tally_data tallies;
-	struct passwd *pwd;
+	struct passwd *pwd = NULL;
 	const char *dir = get_tally_dir(opts);
 	char *endptr;
 	unsigned long uid_val;
@@ -229,24 +229,18 @@ do_user(struct options *opts, const char *user)
 				return 1;
 			}
 			pwd = getpwuid((uid_t)uid_val);
-			if (pwd == NULL) {
-				/* UID exists in tally but not in passwd - inform user */
-				fprintf(stderr, "%s: UID %lu has a tally file but no matching user in passwd\n",
-					opts->progname, uid_val);
-				return 0;
-			}
-		} else {
-			/* Not all digits - treat as username */
-			pwd = getpwnam(user);
 		}
 	} else {
 		/* uid_based_files not enabled - always use username lookup */
 		pwd = getpwnam(user);
 	}
 
-	/* Common error handling for username lookups */
+	/* Common error handling */
 	if (pwd == NULL) {
-		fprintf(stderr, "%s: Error no such user: %s\n", opts->progname, user);
+		fprintf(stderr, "%s: Error no such %s: %s\n",
+			opts->progname,
+			opts->flags & FAILLOCK_FLAG_UID_BASED_FILES ? "id" : "user",
+			user);
 		return 1;
 	}
 	fd = open_tally(dir, pwd->pw_name, pwd->pw_uid, 1, opts->flags & FAILLOCK_FLAG_UID_BASED_FILES);
